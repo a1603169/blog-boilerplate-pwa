@@ -6,6 +6,12 @@ in-browser admin that commits posts back to git, installable as a PWA.
 **Posts stay plain markdown in `content/posts/`.** No database, no CMS service. At runtime
 the site is static HTML on a CDN, so hosting is free and there is nothing to keep alive.
 
+## Example
+
+Please check the link
+
+https://seunghun-website.vercel.app/ 
+
 ## Documentation
 
 | | |
