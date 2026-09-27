@@ -18,13 +18,31 @@ const USER_URL = "https://api.github.com/user";
 
 export const STATE_COOKIE = "admin_oauth_state";
 
-/** OAuth is optional — the password form works without any of this configured. */
+/**
+ * All three are required, `ADMIN_GITHUB_LOGIN` included: without an allowlisted
+ * username any GitHub account could sign in, so a missing one counts as
+ * unconfigured rather than open.
+ *
+ * The login page deliberately says nothing about which variable is absent — it is
+ * publicly reachable. The reason goes to the server log instead, so a silent
+ * lockout is still diagnosable from the deployment's logs.
+ */
 export function isOAuthConfigured(): boolean {
-  return Boolean(
-    process.env.GITHUB_OAUTH_CLIENT_ID &&
-      process.env.GITHUB_OAUTH_CLIENT_SECRET &&
-      process.env.ADMIN_GITHUB_LOGIN,
-  );
+  const missing = [
+    "GITHUB_OAUTH_CLIENT_ID",
+    "GITHUB_OAUTH_CLIENT_SECRET",
+    "ADMIN_GITHUB_LOGIN",
+  ].filter((name) => !process.env[name]);
+
+  if (missing.length > 0) {
+    console.warn(
+      `[admin] GitHub sign-in disabled; missing ${missing.join(", ")}. ` +
+        `All three are required — set them and redeploy.`,
+    );
+    return false;
+  }
+
+  return true;
 }
 
 export function newState(): string {
