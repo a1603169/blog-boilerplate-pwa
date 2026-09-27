@@ -1,0 +1,381 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Dark mode is class-driven so the header toggle can override the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==========================================================================
+   Design tokens
+   Editorial: neutral greyscale carries the page, a single accent carries
+   interaction. Light and dark define the same names, so every component can be
+   written once with no `dark:` colour variants.
+   ========================================================================== */
+
+/* Warm paper + warm ink + a deep green accent.
+   The first pass used a cold grey (hue 265) with a bright blue accent — the
+   default pairing of every generated portfolio, and the main reason the site
+   read as templated. Warm neutrals give the greyscale somewhere to sit, and the
+   green carries interaction without shouting. */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: oklch(98.5% 0.006 85);
+  --bg-subtle: oklch(96.3% 0.009 85);
+  --surface: oklch(99.6% 0.004 85);
+  --border: oklch(89% 0.012 80);
+  --border-strong: oklch(78% 0.016 75);
+
+  /* text */
+  --fg: oklch(24% 0.015 60);
+  --fg-muted: oklch(48% 0.014 65);
+  --fg-subtle: oklch(62% 0.013 70);
+
+  /* the one accent */
+  --accent: oklch(42% 0.09 155);
+  --accent-hover: oklch(34% 0.09 155);
+  --accent-contrast: oklch(98.5% 0.01 85);
+  --accent-subtle: oklch(94% 0.03 155);
+
+  --code-bg: oklch(96.8% 0.008 85);
+  --selection: oklch(90% 0.05 155);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Warm dark rather than blue-black, so the light and dark schemes read as the
+     same site. */
+  --bg: oklch(18% 0.012 60);
+  --bg-subtle: oklch(21.5% 0.014 60);
+  --surface: oklch(23% 0.015 60);
+  --border: oklch(31% 0.015 60);
+  --border-strong: oklch(42% 0.016 60);
+
+  --fg: oklch(93% 0.012 85);
+  --fg-muted: oklch(70% 0.013 75);
+  --fg-subtle: oklch(58% 0.012 70);
+
+  --accent: oklch(74% 0.12 155);
+  --accent-hover: oklch(82% 0.1 155);
+  --accent-contrast: oklch(17% 0.015 60);
+  --accent-subtle: oklch(28% 0.045 155);
+
+  --code-bg: oklch(20.5% 0.013 60);
+  --selection: oklch(35% 0.07 155);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-subtle: var(--accent-subtle);
+
+  /* Latin serif for display; Korean falls back to the platform UI face, which
+     reads better on screen than a downloaded Korean serif costing ~1MB. */
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo,
+    monospace;
+
+  /* Editorial measure: ~68ch for prose, a touch wider for list pages. */
+  --container-prose: 43rem;
+  --container-page: 60rem;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Offset for the sticky header when jumping to a heading anchor. Replaces
+       the old `padding-top: 120px; margin-top: -90px` hack on bare h3. */
+    scroll-padding-top: 5.5rem;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Notch handling lives on the horizontal axis only; the header and footer
+       own their own vertical insets. No `!important` needed. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  ::selection {
+    background-color: var(--selection);
+  }
+
+  :where(h1, h2, h3, h4, h5, h6) {
+    scroll-margin-top: 5.5rem;
+    text-wrap: balance;
+  }
+
+  :where(p, li) {
+    text-wrap: pretty;
+  }
+
+  :where(a, button, input, textarea, select):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+/* Safe-area insets as real utilities instead of ad-hoc `!important` on body. */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Small-caps mono label used for dates, tags and section eyebrows. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fade-and-rise on first paint. Replaces framer-motion, which was pulled in
+   for this one effect. `Reveal` toggles [data-revealed]. */
+@utility reveal {
+  opacity: 0;
+  transform: translateY(0.75rem);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &[data-revealed="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Prose (rendered markdown)
+   ========================================================================== */
+
+.prose {
+  --tw-prose-body: var(--fg);
+  --tw-prose-headings: var(--fg);
+  --tw-prose-lead: var(--fg-muted);
+  --tw-prose-links: var(--accent);
+  --tw-prose-bold: var(--fg);
+  --tw-prose-counters: var(--fg-subtle);
+  --tw-prose-bullets: var(--border-strong);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--fg-muted);
+  --tw-prose-quote-borders: var(--accent);
+  --tw-prose-captions: var(--fg-subtle);
+  --tw-prose-code: var(--fg);
+  --tw-prose-pre-code: var(--fg);
+  --tw-prose-pre-bg: var(--code-bg);
+  --tw-prose-th-borders: var(--border-strong);
+  --tw-prose-td-borders: var(--border);
+
+  max-width: none;
+}
+
+/* Serif is reserved for the top two levels. Applying it to h1-h4 alike meant the
+   display face appeared so often it stopped signalling anything. */
+.prose :is(h1, h2) {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.prose :is(h3, h4) {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Only h2 carries a rule — most posts here are a long run of h3s, and a hairline
+   under every one of them turned the page into a ledger. */
+.prose h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Inline code — distinguishable from highlighted blocks. */
+.prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.1em 0.35em;
+  font-weight: 400;
+}
+
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: none;
+}
+
+.prose pre {
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* Blockquote: editorial hanging rule, not the old grey box with a giant glyph. */
+.prose blockquote {
+  font-style: normal;
+  border-left-width: 2px;
+  padding-left: 1.25rem;
+  color: var(--fg-muted);
+}
+
+.prose blockquote p::before,
+.prose blockquote p::after {
+  content: none;
+}
+
+/* ---- shiki dual theme -------------------------------------------------- */
+/* rehype-pretty-code marks highlighted elements with `data-theme` (it does not
+   add a `.shiki` class) and emits both palettes as custom properties on every
+   token. Pick one per colour scheme. */
+:root:not(.dark) [data-theme],
+:root:not(.dark) [data-theme] span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+.dark [data-theme],
+.dark [data-theme] span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+.prose figure[data-rehype-pretty-code-figure] {
+  margin-block: 1.5em;
+}
+
+/* Language label / title emitted by rehype-pretty-code. */
+.prose [data-rehype-pretty-code-title] {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 0.6rem 0.6rem 0 0;
+  padding: 0.5rem 0.9rem;
+}
+
+.prose [data-rehype-pretty-code-title] + pre {
+  margin-top: 0;
+  border-radius: 0 0 0.6rem 0.6rem;
+}
+
+/* ---- tables ------------------------------------------------------------ */
+/* Wrapper is added at build time by the rehype plugin in lib/posts.ts, so wide
+   tables scroll instead of blowing out the layout on mobile. */
+.prose .table-scroll {
+  overflow-x: auto;
+  margin-block: 1.5em;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background-color: var(--surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose .table-scroll > table {
+  margin: 0;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.prose :is(th, td) {
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.prose thead th {
+  background-color: var(--bg-subtle);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prose tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.prose tbody tr:hover {
+  background-color: var(--bg-subtle);
+}
+
+/* First column carries the row label — keep it on one line. */
+.prose :is(th, td):first-child {
+  min-width: 6rem;
+}
+
+/* ---- legacy classes authored inside the markdown ---------------------- */
+.prose .blogLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.prose .blogLink:hover {
+  color: var(--accent-hover);
+}
+
+.prose .blogImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  margin-block: 2rem;
+}
