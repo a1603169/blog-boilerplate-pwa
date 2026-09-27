@@ -37,7 +37,12 @@ export default function BackToTop() {
       // Kept out of the tab order and off the screen reader tree while hidden.
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
-      className={`pb-safe fixed bottom-6 right-5 z-30 grid size-10 place-items-center rounded-full border border-border bg-surface/90 text-fg-muted shadow-sm backdrop-blur transition-all duration-300 hover:border-border-strong hover:text-fg ${
+      /*
+       * The safe-area inset belongs in the offset, not in the padding. `pb-safe`
+       * added ~34px of padding-bottom inside a 40px button on iPhone, so the arrow
+       * was centred in the ~6px that remained and sat visibly high.
+       */
+      className={`fixed bottom-[calc(1.5rem_+_env(safe-area-inset-bottom))] right-5 z-30 grid size-10 place-items-center rounded-full border border-border bg-surface/90 text-fg-muted shadow-sm backdrop-blur transition-all duration-300 hover:border-border-strong hover:text-fg ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >

@@ -41,6 +41,9 @@ export async function generateMetadata({
       url: `/blog/${post.slug}`,
     },
     alternates: { canonical: `/blog/${post.slug}` },
+    // Archived posts are absent from the index and the sitemap; keeping them out
+    // of search results too is the same intent.
+    ...(post.archived ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

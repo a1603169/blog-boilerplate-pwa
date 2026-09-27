@@ -9,6 +9,7 @@ export interface PostDraft {
   date: string;
   tags: string[];
   draft: boolean;
+  archived: boolean;
   body: string;
 }
 
@@ -71,6 +72,7 @@ export function serializePost(draft: PostDraft): string {
 
   // Only written when true, so published posts keep the frontmatter they had.
   if (draft.draft) lines.push("draft: true");
+  if (draft.archived) lines.push("archived: true");
 
   lines.push("---", "", draft.body.trim(), "");
   return lines.join("\n");
@@ -88,6 +90,7 @@ export function parsePost(slug: string, markdown: string): PostDraft {
       ? data.tags.filter((t): t is string => typeof t === "string").map((t) => t.toLowerCase())
       : [],
     draft: data.draft === true,
+    archived: data.archived === true,
     body: content.replace(/^\n+/, ""),
   };
 }

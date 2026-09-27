@@ -19,6 +19,7 @@ export default async function NewPostPage() {
           date: todayIso(),
           tags: [],
           draft: false,
+          archived: false,
           body: "",
         }}
       />

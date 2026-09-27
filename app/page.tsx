@@ -7,6 +7,7 @@ import ProjectCard from "@/components/ui/ProjectCard";
 import Reveal from "@/components/ui/Reveal";
 import SocialLinks from "@/components/ui/SocialLinks";
 import { PROJECTS } from "@/data/projects";
+import { getCommentCounts } from "@/lib/comments";
 import { getPostSummaries } from "@/lib/posts";
 import { site } from "@/lib/site";
 
@@ -30,8 +31,11 @@ function SectionHeading({ label, href, cta }: { label: string; href: string; cta
   );
 }
 
+/* Regenerated hourly so the comment counts stay roughly current. */
+export const revalidate = 3600;
+
 export default async function HomePage() {
-  const posts = await getPostSummaries();
+  const [posts, commentCounts] = await Promise.all([getPostSummaries(), getCommentCounts()]);
   const recent = posts.slice(0, RECENT_COUNT);
   const featured = PROJECTS.filter((project) => project.status === "live").slice(0, 3);
 
@@ -82,7 +86,11 @@ export default async function HomePage() {
           <SectionHeading label="Recent writing" href="/blog" cta="All posts" />
           <ul>
             {recent.map((post) => (
-              <PostListItem key={post.slug} post={post} />
+              <PostListItem
+                key={post.slug}
+                post={post}
+                commentCount={commentCounts[post.slug] ?? 0}
+              />
             ))}
           </ul>
         </Reveal>

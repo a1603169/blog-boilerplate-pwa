@@ -184,6 +184,8 @@ async function readPost(slug: string): Promise<Post> {
     // generated page. The source repository is private, so a committed draft stays
     // unpublished rather than merely unlinked.
     draft: data.draft === true,
+    // `archived: true` keeps the page but removes it from every listing.
+    archived: data.archived === true,
     searchText,
     contentHtml,
     headings,
@@ -209,12 +211,22 @@ function loadAllPosts(): Promise<Post[]> {
 }
 
 function toSummary(post: Post): PostSummary {
-  const { slug, title, subtitle, date, tags, searchText } = post;
-  return { slug, title, subtitle, date, tags, searchText };
+  const { slug, title, subtitle, date, tags, searchText, archived } = post;
+  return { slug, title, subtitle, date, tags, searchText, archived };
 }
 
-/** Index/landing data. Excludes `contentHtml` so the RSC payload stays small. */
+/**
+ * Index/landing data. Excludes `contentHtml` so the RSC payload stays small, and
+ * excludes archived posts — those keep their page but leave the listings.
+ */
 export async function getPostSummaries(): Promise<PostSummary[]> {
+  return (await loadAllPosts())
+    .filter((post) => !post.archived)
+    .map(toSummary);
+}
+
+/** Every non-draft post, archived included. For the admin list and adjacency. */
+export async function getAllPostSummaries(): Promise<PostSummary[]> {
   return (await loadAllPosts()).map(toSummary);
 }
 
@@ -233,7 +245,9 @@ export async function getPost(slug: string): Promise<Post | null> {
 export async function getAdjacentPosts(
   slug: string,
 ): Promise<{ older: PostSummary | null; newer: PostSummary | null }> {
-  const posts = await loadAllPosts();
+  // Archived posts keep their page but leave the reading flow, so they are not
+  // offered as a neighbour — consistent with being absent from the index.
+  const posts = (await loadAllPosts()).filter((post) => !post.archived || post.slug === slug);
   const index = posts.findIndex((post) => post.slug === slug);
   if (index === -1) return { older: null, newer: null };
 

@@ -3,7 +3,7 @@ import { LuGithub } from "react-icons/lu";
 
 import LoginForm from "@/components/admin/LoginForm";
 import Container from "@/components/ui/Container";
-import { isAuthenticated } from "@/lib/admin/auth";
+import { isAuthenticated, isPasswordLoginAllowed } from "@/lib/admin/auth";
 import { isOAuthConfigured } from "@/lib/admin/oauth";
 
 export default async function LoginPage({
@@ -15,6 +15,7 @@ export default async function LoginPage({
 
   const { error } = await searchParams;
   const oauth = isOAuthConfigured();
+  const password = isPasswordLoginAllowed();
 
   return (
     <Container width="prose" className="py-20">
@@ -23,9 +24,8 @@ export default async function LoginPage({
 
       {error && (
         <p role="alert" className="mt-5 max-w-sm text-sm text-red-500">
-          {error === "oauth_not_configured"
-            ? "GitHub sign-in is not configured on this deployment."
-            : error}
+          {/* Generic: the reason is in the server log, not on a public page. */}
+          {error === "oauth_not_configured" ? "GitHub sign-in is unavailable." : error}
         </p>
       )}
 
@@ -35,31 +35,40 @@ export default async function LoginPage({
             {/* A real navigation, not a client-side one: /admin/auth/github is a
                 Route Handler that 307s to github.com. `next/link` would try to
                 treat it as an in-app page. On a phone GitHub is usually already
-                signed in, so this is one tap instead of a long password. */}
+                signed in, so this is one tap. */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/admin/auth/github"
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border-strong px-4 py-2.5 text-sm text-fg transition-colors hover:bg-bg-subtle"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover"
             >
               <LuGithub className="size-4" aria-hidden />
               Continue with GitHub
             </a>
-
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-xs text-fg-subtle">or</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
+            <p className="text-xs text-fg-subtle">
+              Only the owner&rsquo;s GitHub account can sign in.
+            </p>
           </>
         )}
 
-        <LoginForm />
+        {/* Development only. Production requires proving the GitHub identity —
+            see `isPasswordLoginAllowed` in lib/admin/auth.ts. */}
+        {password && (
+          <>
+            {oauth && (
+              <div className="flex items-center gap-3 pt-1">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-xs text-fg-subtle">or, in development</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            )}
+            <LoginForm />
+          </>
+        )}
 
-        {!oauth && (
-          <p className="text-xs text-fg-subtle">
-            Add GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET and ADMIN_GITHUB_LOGIN to also
-            sign in with GitHub.
-          </p>
+        {/* Fail closed: nothing configured means there is no way in, and the page
+            says so without naming what is missing. */}
+        {!oauth && !password && (
+          <p className="text-sm text-fg-muted">Sign-in is not available.</p>
         )}
       </div>
     </Container>

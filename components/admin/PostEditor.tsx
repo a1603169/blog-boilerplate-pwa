@@ -202,15 +202,26 @@ export default function PostEditor({
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-fg-muted">
-            <input
-              type="checkbox"
-              name="draft"
-              checked={draft.draft}
-              onChange={(event) => set("draft", event.target.checked)}
-            />
-            Draft — committed, but kept off the site
-          </label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
+              <input
+                type="checkbox"
+                name="draft"
+                checked={draft.draft}
+                onChange={(event) => set("draft", event.target.checked)}
+              />
+              Draft — no page at all, and no listing
+            </label>
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
+              <input
+                type="checkbox"
+                name="archived"
+                checked={draft.archived}
+                onChange={(event) => set("archived", event.target.checked)}
+              />
+              Archived — URL still works, but hidden from the index and sitemap
+            </label>
+          </div>
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">

@@ -14,6 +14,7 @@ export interface AdminPostRow {
   title: string;
   date: string;
   draft: boolean;
+  archived: boolean;
 }
 
 /**
@@ -30,7 +31,13 @@ async function loadRows(): Promise<AdminPostRow[]> {
       const file = await getPostFile(slug);
       if (!file) return null;
       const draft = parsePost(slug, file.markdown);
-      return { slug, title: draft.title || slug, date: draft.date, draft: draft.draft };
+      return {
+        slug,
+        title: draft.title || slug,
+        date: draft.date,
+        draft: draft.draft,
+        archived: draft.archived,
+      };
     }),
   );
 
@@ -52,6 +59,7 @@ export default async function AdminPage() {
   }
 
   const draftCount = rows.filter((row) => row.draft).length;
+  const archivedCount = rows.filter((row) => row.archived).length;
 
   return (
     <Container className="py-10">
@@ -60,6 +68,7 @@ export default async function AdminPage() {
           <h1 className="font-serif text-2xl font-semibold text-fg">Posts</h1>
           <p className="mt-1 text-sm text-fg-subtle">
             {rows.length} total{draftCount > 0 && `, ${draftCount} draft`}
+            {archivedCount > 0 && `, ${archivedCount} archived`}
           </p>
         </div>
         <div className="flex items-center gap-2">

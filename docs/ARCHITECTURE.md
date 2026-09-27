@@ -144,10 +144,17 @@ Three deliberate choices:
 
 ### Auth
 
-Two ways in, one session:
+One session, reached two ways — but only one of them works in production:
 
-- **Password** — compared in constant time, then an HMAC-signed httpOnly cookie
-- **GitHub OAuth** — identity only; `ADMIN_GITHUB_LOGIN` restricts it to one username
+- **GitHub OAuth** — the production path. `ADMIN_GITHUB_LOGIN` restricts it to a single
+  username, so admin rights follow the account (and whatever 2FA protects it) rather than
+  a secret anyone could pass along.
+- **Password** — development only. `checkPassword()` returns false when
+  `NODE_ENV=production`, and the `login` server action checks the same thing again, because
+  a server action is its own HTTP entry point and hiding a form is not a control.
+
+The password survives locally only because an OAuth App permits one callback URL, so a
+production app cannot authorise `localhost`.
 
 OAuth deliberately does **not** supply the commit credential. An OAuth App token carries
 the whole `repo` scope across every repository the account can reach, while the
@@ -190,6 +197,26 @@ signed-in HTML in the cache.
 
 This replaced `next-pwa`, which is unmaintained, does not support Next 15, and committed a
 ~250 kB generated Workbox bundle that had to be regenerated on every build.
+
+## Bulk edits are one commit
+
+`commitFiles()` in `lib/admin/github.ts` uses the Git **Trees** API: create a blob per file,
+layer a tree on the parent's, commit, move the branch. Five requests regardless of how many
+files change.
+
+The Contents API that `writeFile()` uses is one commit per file, so a bulk action over
+twenty posts would push twenty commits and trigger twenty builds.
+
+## Comment counts
+
+utterances names each issue after the post's pathname, so the issue list doubles as a count
+index — see `lib/comments.ts`. It reads the comments repository **without a token** (that
+repo is public, and the PAT is scoped elsewhere) and never throws: a failure omits the
+counts rather than failing a build.
+
+A new comment does not trigger a deploy, so the blog index and landing page set
+`revalidate = 3600`. They stay prerendered and CDN-cached; the numbers just refresh hourly
+instead of freezing at whatever they were when you last published.
 
 ## Things that will bite you
 

@@ -102,29 +102,49 @@ tags: [Kubernetes, Cloud]
 
 ## Admin
 
-`/admin` gives you create, edit, delete, drafts, image upload, and a preview that renders
-through the *same* pipeline as the published page. Saving commits to the repository, and
-the commit triggers your host's build — so **saving is what publishes**, live in ~30s.
+`/admin` gives you create, edit, delete, drafts, archiving, bulk actions, image upload, and
+a preview that renders through the *same* pipeline as the published page. Saving commits to
+the repository, and the commit triggers your host's build — so **saving is what publishes**,
+live in ~30s.
+
+Two ways to take a post out of circulation, and they differ:
+
+| | Page | Listings, sitemap | Search engines |
+|---|---|---|---|
+| `draft: true` | does not exist | absent | — |
+| `archived: true` | still reachable | absent | `noindex` |
+
+Bulk actions apply either flag to many posts in a **single commit** via the Git Trees API —
+one commit and one build no matter how many you select. Doing it through the Contents API
+would be one commit, and one build, per file.
 
 Reads go to the GitHub API rather than the deployed filesystem, which is only a snapshot
 of the last build; editing from that snapshot could clobber a newer commit.
 
-Sign in with a password, or with GitHub if you configure it.
+**In production, GitHub is the only way in.** Admin access means proving you are the
+account in `ADMIN_GITHUB_LOGIN` — not knowing a password, which is a shared secret that
+can leak. Nothing configured means no way in at all: the login page fails closed.
+
+OAuth is identity only. Commits still use the PAT, because an OAuth App token carries the
+whole `repo` scope across every repository the account can reach, while a fine-grained PAT
+is scoped to this repository's contents.
 
 | Variable | Purpose |
 |---|---|
-| `ADMIN_PASSWORD` | password sign-in |
 | `ADMIN_SECRET` | signs the session cookie — `openssl rand -hex 32` |
 | `GITHUB_TOKEN` | fine-grained PAT, this repo only, Contents: read and write |
 | `GITHUB_REPO` | `owner/name` |
 | `GITHUB_BRANCH` | branch to commit to |
+| `GITHUB_OAUTH_CLIENT_ID` | OAuth App |
+| `GITHUB_OAUTH_CLIENT_SECRET` | OAuth App |
+| `ADMIN_GITHUB_LOGIN` | the only username allowed to sign in |
 
-Optional GitHub sign-in — identity only, commits still use the PAT:
-`GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, `ADMIN_GITHUB_LOGIN`.
+An OAuth App allows one callback URL, so register one app per environment, pointing at
+`…/admin/auth/callback`.
 
-`ADMIN_GITHUB_LOGIN` is not optional if you enable OAuth: without it, any GitHub account
-could sign in. An OAuth App allows one callback URL, so register separate apps for local
-and production.
+`ADMIN_PASSWORD` enables password sign-in **in development only** — `checkPassword()`
+refuses when `NODE_ENV=production`, and the server action re-checks independently of the
+UI. It exists so you can work locally without registering a `localhost` OAuth App first.
 
 Set the same variables in your host's dashboard, then redeploy — they are injected at
 build time, so adding them without a rebuild has no effect. Full walkthrough, including how

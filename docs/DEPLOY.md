@@ -47,22 +47,19 @@ Add each one for **Production, Preview and Development**:
 
 | Key | Value | Notes |
 |---|---|---|
-| `ADMIN_PASSWORD` | your password | password sign-in |
 | `ADMIN_SECRET` | `openssl rand -hex 32` | signs the session cookie |
-| `GITHUB_TOKEN` | `github_pat_…` | see below |
+| `GITHUB_TOKEN` | `github_pat_…` | see below — required even with GitHub sign-in |
 | `GITHUB_REPO` | `your-handle/your-repo` | where posts are committed |
 | `GITHUB_BRANCH` | `main` | the branch your deploys build from |
+| `GITHUB_OAUTH_CLIENT_ID` | from the OAuth App | |
+| `GITHUB_OAUTH_CLIENT_SECRET` | from the OAuth App | |
+| `ADMIN_GITHUB_LOGIN` | your GitHub username | the only account allowed in |
 
-Optional, to also offer GitHub sign-in:
+`ADMIN_PASSWORD` is **not needed in production** — password sign-in is refused when
+`NODE_ENV=production`. Set it only in `.env.local`.
 
-| Key | Value |
-|---|---|
-| `GITHUB_OAUTH_CLIENT_ID` | from the OAuth App |
-| `GITHUB_OAUTH_CLIENT_SECRET` | from the OAuth App |
-| `ADMIN_GITHUB_LOGIN` | your GitHub username |
-
-`ADMIN_GITHUB_LOGIN` is **not optional if you enable OAuth.** The OAuth App is public;
-without a username allowlist, any GitHub account on earth could sign in.
+`ADMIN_GITHUB_LOGIN` is **mandatory.** The OAuth App is public; without a username
+allowlist, any GitHub account on earth could sign in.
 
 ### Creating the commit token
 
@@ -78,7 +75,7 @@ repository's files and nothing else.
 Note the **expiration**: when it lapses, saving in `/admin` starts failing. Pick a long
 window or set a calendar reminder.
 
-### Creating the OAuth App (optional)
+### Creating the OAuth App
 
 <https://github.com/settings/developers> → **New OAuth App**
 
@@ -88,7 +85,11 @@ window or set a calendar reminder.
 | Authorization callback URL | `https://your-domain/admin/auth/callback` | `http://localhost:3000/admin/auth/callback` |
 
 An OAuth App allows **one** callback URL, so register **two apps** — one per environment —
-or use GitHub in production and the password locally.
+or register only the production app and use the development password locally.
+
+The callback URL must match exactly: no trailing slash, right scheme, right host. GitHub
+rejects anything else with `redirect_uri mismatch`. Adding a custom domain later means
+updating it.
 
 ## 4. Comments
 
@@ -130,6 +131,7 @@ sitemap and Open Graph tags, so a stale value quietly hurts SEO and link preview
 | `/manifest.webmanifest` | your name and icons |
 | `/admin` | redirects to `/admin/login` |
 | `/admin` after signing in | your posts listed |
+| `/admin/login` in production | GitHub button only, no password field |
 | a post page | comments widget renders (not an error) |
 
 Then publish something from `/admin` with **Draft** ticked. It should commit without

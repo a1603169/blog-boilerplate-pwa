@@ -14,6 +14,11 @@ export interface PostSummary {
   tags: string[];
   /** Plain-text body, lowercased and truncated — powers full-text search on the index. */
   searchText: string;
+  /**
+   * Reachable by URL but hidden from the index, the landing page and the sitemap.
+   * Distinct from `draft`, which prevents the page existing at all.
+   */
+  archived: boolean;
 }
 
 export interface Post extends PostSummary {

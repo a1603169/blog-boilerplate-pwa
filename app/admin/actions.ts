@@ -3,10 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/admin/auth";
+import {
+  checkPassword,
+  endSession,
+  isPasswordLoginAllowed,
+  requireAdmin,
+  startSession,
+} from "@/lib/admin/auth";
 import {
   IMAGES_PATH,
   POSTS_PATH,
+  commitFiles,
   deleteFile,
   getFileSha,
   getPostFile,
@@ -15,6 +22,7 @@ import {
 import {
   type PostDraft,
   SLUG_PATTERN,
+  parsePost,
   parseTagInput,
   serializePost,
   validateDraft,
@@ -38,6 +46,7 @@ function draftFromForm(form: FormData): PostDraft {
     date: String(form.get("date") ?? "").trim(),
     tags: parseTagInput(String(form.get("tags") ?? "")),
     draft: form.get("draft") === "on" || form.get("draft") === "true",
+    archived: form.get("archived") === "on" || form.get("archived") === "true",
     body: String(form.get("body") ?? ""),
   };
 }
@@ -46,6 +55,11 @@ function draftFromForm(form: FormData): PostDraft {
 
 export async function login(_: ActionResult | null, form: FormData): Promise<ActionResult> {
   try {
+    // Checked here as well as in the UI: a server action is its own HTTP entry
+    // point, so hiding the form is not a control.
+    if (!isPasswordLoginAllowed()) {
+      return { ok: false, error: "Sign in with GitHub." };
+    }
     if (!checkPassword(String(form.get("password") ?? ""))) {
       return { ok: false, error: "Wrong password." };
     }
@@ -143,6 +157,86 @@ export async function deletePost(
 
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+/* ----------------------------------------------------------------- bulk ---- */
+
+export type BulkAction = "draft" | "publish" | "archive" | "unarchive";
+
+const BULK_LABELS: Record<BulkAction, string> = {
+  draft: "Mark as draft",
+  publish: "Publish",
+  archive: "Archive",
+  unarchive: "Unarchive",
+};
+
+/**
+ * Applies one flag change to many posts in a single commit.
+ *
+ * `draft` removes a post from the site entirely — no page, no listing.
+ * `archive` keeps the page reachable by URL but drops it from the index, the
+ * landing page and the sitemap. They are independent.
+ */
+export async function bulkUpdate(
+  _: ActionResult | null,
+  form: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+
+    const action = String(form.get("action") ?? "") as BulkAction;
+    if (!(action in BULK_LABELS)) return { ok: false, error: "Unknown action." };
+
+    const slugs = form
+      .getAll("slugs")
+      .map((value) => String(value).trim())
+      .filter((slug) => SLUG_PATTERN.test(slug));
+
+    if (slugs.length === 0) return { ok: false, error: "Select at least one post." };
+
+    const files: { path: string; content: string }[] = [];
+    let unchanged = 0;
+
+    for (const slug of slugs) {
+      const file = await getPostFile(slug);
+      if (!file) continue;
+
+      const draft = parsePost(slug, file.markdown);
+      const next: PostDraft = {
+        ...draft,
+        draft: action === "draft" ? true : action === "publish" ? false : draft.draft,
+        archived:
+          action === "archive" ? true : action === "unarchive" ? false : draft.archived,
+      };
+
+      // Skip no-ops so the commit contains only real changes.
+      if (next.draft === draft.draft && next.archived === draft.archived) {
+        unchanged += 1;
+        continue;
+      }
+
+      files.push({ path: `${POSTS_PATH}/${slug}.md`, content: serializePost(next) });
+    }
+
+    if (files.length === 0) {
+      return { ok: false, error: `Nothing to change — ${unchanged} already in that state.` };
+    }
+
+    await commitFiles({
+      files,
+      message: `${BULK_LABELS[action]}: ${files.length} post${files.length === 1 ? "" : "s"}`,
+    });
+
+    revalidatePath("/admin");
+    return {
+      ok: true,
+      message:
+        `${BULK_LABELS[action]} applied to ${files.length} post${files.length === 1 ? "" : "s"} ` +
+        `in one commit${unchanged ? `, ${unchanged} skipped` : ""}. Rebuilding.`,
+    };
+  } catch (error) {
+    return { ok: false, error: toMessage(error) };
+  }
 }
 
 /* ------------------------------------------------------------- preview ---- */

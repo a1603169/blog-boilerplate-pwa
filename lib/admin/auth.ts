@@ -42,7 +42,24 @@ function safeEqual(a: string, b: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
+/**
+ * Password sign-in is DEVELOPMENT ONLY.
+ *
+ * In production, admin access requires proving you are the GitHub account named in
+ * ADMIN_GITHUB_LOGIN. A password is a shared secret that can leak and grants access
+ * to anyone holding it; a GitHub identity is tied to the account and whatever 2FA
+ * protects it.
+ *
+ * It survives locally only because an OAuth App permits a single callback URL, so a
+ * production app cannot authorise `localhost`. Rather than force a second OAuth App
+ * before you can edit anything on your own machine, the password stays for dev.
+ */
+export function isPasswordLoginAllowed(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
 export function checkPassword(candidate: string): boolean {
+  if (!isPasswordLoginAllowed()) return false;
   return safeEqual(candidate, requiredEnv("ADMIN_PASSWORD"));
 }
 

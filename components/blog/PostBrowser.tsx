@@ -13,9 +13,12 @@ import type { PostSummary, TagCount } from "@/types/post";
 export default function PostBrowser({
   posts,
   tags,
+  commentCounts = {},
 }: {
   posts: PostSummary[];
   tags: TagCount[];
+  /** slug -> comment count, from the utterances repo. */
+  commentCounts?: Record<string, number>;
 }) {
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -145,7 +148,11 @@ export default function PostBrowser({
         {visible.length > 0 ? (
           <ul className="mt-3 border-t border-border">
             {visible.map((post) => (
-              <PostListItem key={post.slug} post={post} />
+              <PostListItem
+                key={post.slug}
+                post={post}
+                commentCount={commentCounts[post.slug] ?? 0}
+              />
             ))}
           </ul>
         ) : (

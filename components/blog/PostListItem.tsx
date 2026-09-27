@@ -1,9 +1,17 @@
 import Link from "next/link";
+import { LuMessageSquare } from "react-icons/lu";
 
 import type { PostSummary } from "@/types/post";
 import { formatDate } from "@/lib/utils";
 
-export default function PostListItem({ post }: { post: PostSummary }) {
+export default function PostListItem({
+  post,
+  commentCount = 0,
+}: {
+  post: PostSummary;
+  /** From the utterances repo at build time; omitted when unavailable. */
+  commentCount?: number;
+}) {
   return (
     <li className="border-b border-border">
       <Link
@@ -23,6 +31,7 @@ export default function PostListItem({ post }: { post: PostSummary }) {
           <time dateTime={post.date} className="label-mono text-fg-subtle">
             {formatDate(post.date)}
           </time>
+
           {post.tags.length > 0 && (
             <ul className="flex flex-wrap gap-x-2 gap-y-1 text-fg-subtle">
               {post.tags.map((tag) => (
@@ -31,6 +40,17 @@ export default function PostListItem({ post }: { post: PostSummary }) {
                 </li>
               ))}
             </ul>
+          )}
+
+          {/* Only shown when there is something to see, so the row stays quiet. */}
+          {commentCount > 0 && (
+            <span className="flex items-center gap-1 text-fg-subtle">
+              <LuMessageSquare className="size-3" aria-hidden />
+              {commentCount}
+              <span className="sr-only">
+                {commentCount === 1 ? "comment" : "comments"}
+              </span>
+            </span>
           )}
         </div>
       </Link>
